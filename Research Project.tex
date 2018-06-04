@@ -1,0 +1,116 @@
+\documentclass{article}
+
+\usepackage{listings}
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\newcommand{\inlinecode}[2]{{\lstinline[language=#1]$#2$}}
+
+\begin{document}
+
+\title{%
+  \textbf{Banknote Authentication Design Considerations} \\
+  \large Machine Learning for Security and  \\
+    Performance in Production Settings}
+\author{Alice Chang, Karthik Umashankar, Yu Chen}
+\maketitle
+
+
+\begin{abstract}
+Banknote authentication is a high-value task within the financial services industry. In this paper, we perform a validation study and probe into potential vulnerabilities of online machine learning models utilized for this task. In particular, we utilize the work of  "Banknote Authentication" by Gillich and Lohweg\cite{original_paper}. The authors utilized an industry-standard technique of filtering the banknote grayscale image for viable regions of interest, and then performing a novel Shift Invariant Wavelet Transform for the model's feature engineering. We first validate Gillich and Lohweg's findings of 100\% accuracy on holdout datasets using a multitude of models (k-Nearest Neighbors, Support Vector Machine, etc.), and then identify critical thresholds where sample size begins to negative impact the potential performance of a machine learning model once deployed into production.
+\newline\newline
+We conclude by investigating potential vulnerabilities an online machine learning system can encounter, namely the Frog Boiling Attack. We outline a potential implementation of this type of penetration attack and highlight various potential countermeasures to mitigate its negative impact on a machine learning system in production.
+\end{abstract}
+
+\section{Introduction}
+The Intaglio technique used within banknote printing allows for an unmatched sharpness in contrast through a feelable relief\cite{intaglio} .This technique forms a vital component of modern-day banknote authenticity verification. In the initial phase of authentication, \textbf{image digitization} occurs where the banknote's relief is captured through industry-grade cameras to produce an image grayscale that can be then undergo a feature transformation, such as the Wavelet Transform (WT). Prior to feature transformation, various \textbf{Regions of Interest (ROI)}.  Regions with low mean and variance in grayscale values of the various blocks are selected:
+\begin{figure}
+  \caption{A scatter plot from Gillich and Lohweg, 2010 showing the decision boundaries for selection of viable regions of interest. The circles are classified as appropriate ROIs while the squares are discarded for non-homogeneity or high mean grayscale values.}
+  \centering
+\includegraphics[width=100mm]{roi_selection.png}
+\end{figure}
+\section{Related Work}
+
+\section{Experiments}
+
+\subsection{Validation of Model Performances}
+In their original paper, Gillich and Lohweg assert that 100\% accuracy can be achieved as a result of judicious Region of Interest selection and the Shift Invariant Transform. To validate, we performed basic data processing, scaling the dataset so that each feature column $k$ had $\mu_{k} = 0$ and a $\sigma_{k} = 1$:
+
+\begin{lstlisting}
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+df = pd.read_csv("data/dataset.csv", encoding="latin-1") # import the CSV dataset and save as a Pandas dataframe object
+    
+targets = df["class"].values # save the targets (Y) as a NumPy array of integers
+features_df = df.loc[:, df.columns != "class"] # save everything else as the features (X)
+    
+features_names = features_df.columns.values # save the column names
+features_matrix = features_df.values # convert X from a dataframe to a matrix (for our machine learning models)
+scaled_features_matrix = StandardScaler().fit_transform(features_matrix) # scale the data so mean = 0, unit variance - important for many models
+\end{lstlisting}
+
+The cleaned \lstinline{scaled_features_matrix} Numpy object can then be fed into a variety of different models:
+
+\begin{lstlisting}
+logistic_regression = LogisticRegression()
+logistic_regression.fit(X_train, y_train)
+training_predictions = logistic_regression.predict(X_train)
+test_predictions = logistic_regression.predict(X_test)
+
+# check accuracy of Logistic Regression
+number_correct = np.sum(training_predictions == y_train)
+number_correct_test = np.sum(test_predictions == y_test)
+\end{lstlisting}
+
+\subsection{Sample Size Stress Testing}
+
+\subsection{Implementation of Frog Boiling Attack}
+
+
+\section{Future Work}
+
+\begin{thebibliography}{9}
+\bibitem{original_paper}
+Eugen Gillich and Volker Lohweg. \textit{Banknote Authentication}. inIT - Institute Industrial IT, Department of Electrical Engineering and Computer Science, Ostwestfalen-Lippe University of Applied Sciences
+November 2010
+\bibitem{intaglio}
+Van Renesse, R.L.: Optical Document Security, 3rd edn., Artehouse Boston/London
+(2005)
+\end{thebibliography}
+
+
+
+
+
+
+
+
+
+\end{document}
