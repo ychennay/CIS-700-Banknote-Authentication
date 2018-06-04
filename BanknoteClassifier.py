@@ -28,7 +28,7 @@ class BanknoteClassifier:
 
 		scaled_features_matrix = StandardScaler().fit_transform(features_matrix) # scale the data so mean = 0, unit variance - important for many models
 
-		[print("The mean is {} and standard deviation is {} for column {}.".format(round(numpy.mean(column),2), numpy.std(column), idx))
+		[print("The mean is {} and standard deviation is {} for column {}.".format(round(numpy.mean(column),idx), numpy.std(column), idx))
 		 for idx, column in enumerate(scaled_features_matrix.T)] # check that the mean and std dev are 0 and 1
 
 		self.training_features, self.test_features, self.training_class, self.test_class = train_test_split(scaled_features_matrix, targets, test_size=0.20, random_state=21)
@@ -49,7 +49,7 @@ class BanknoteClassifier:
 		elif classifier == 'gaussian':
 			self.classifier = GaussianProcessClassifier(n_jobs = -1)
 		elif classifier == 'knn':
-			self.classifier = KNeighborsClassifier(n_jobs = -1)
+			self.classifier = KNeighborsClassifier(n_jobs = -1, weights = 'uniform', n_neighbors=12)
 		else:
 			self.classifier = LogisticRegression()
 
@@ -73,3 +73,54 @@ class BanknoteClassifier:
 		}
 
 		return data;
+
+	def CorruptData(self):
+		# Get the mean values of the test set where class = 0
+		test_set_mean = self.GetMean('test', 0)
+
+		# Get the mean values of the training set where class = 1
+		training_set_mean = self.GetMean('training', 1)
+
+		# Initialize a new row to be added to the training set
+		corrupt_training_record = [[0 for x in range(4)] for y in range(1)]
+
+		# The new entry must be one step away from the training set (class 1)
+		# and one step closer to the test set (class 0).
+		for i in range(0,3):
+			if(training_set_mean[i] < test_set_mean[i]):
+				corrupt_training_record[0][i] = training_set_mean[i] + 1
+			elif(training_set_mean[i] < test_set_mean[i]):
+				corrupt_training_record[0][i] = training_set_mean[i] - 1
+			else:
+				corrupt_training_record[0][i] = training_set_mean[i]
+
+		# Append the new row to the training features, and set its class to 1
+		self.training_features = numpy.vstack([self.training_features, corrupt_training_record])
+		self.training_class = numpy.append(self.training_class, [1]) 
+
+	def GetMean(self, dataset, classification):
+		mean = []
+		for i in range(0,3):
+			mean.append(0)				
+		if(dataset == 'test'):
+			class_source = self.test_class
+			feature_source = self.test_features
+		if(dataset == 'training'):
+			class_source = self.training_class
+			feature_source = self.training_features
+
+		# We have 4 features.
+		# For each feature, sum up all the values in the set
+		# where class = classification, and divide them by the count
+		# Simple mean calculation.
+		count = 0
+		for idx, target in enumerate(class_source):
+			if(target == classification):
+				for i in range(0,3):
+					mean[i] = mean[i] + feature_source[idx][i]
+
+		if(count > 0):
+			for i in range(0,3):
+				mean[i] /= count
+
+		return mean
