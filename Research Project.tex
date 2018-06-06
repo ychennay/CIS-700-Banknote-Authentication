@@ -90,10 +90,24 @@ number_correct_test = np.sum(test_predictions == y_test)
 
 \subsection{Sample Size Stress Testing}
 
-\subsection{Implementation of Frog Boiling Attack}
+\subsection{Implementation of Frog Boiling Attack (FBA)}
 
-The Frog Boiling Attack is
+The Frog Boiling Attack is most effective during business contexts where online learning occurs (when data arrives as a stream and becomes ingested sequentially, with the fitted model updated after each new data point). The attack relies upon the concept of template drift\cite{template_drift}, where the model's fitted "template" of an authentic banknote data sample is corrupted over time by a stream of compromised data points. The overall implementation, implemented over $N$ steps, relies upon the update equation
 
+\begin{equation}
+F_{new} = F_{old} + (i - 1)\delta(x)
+\end{equation}
+
+where
+
+\begin{equation}
+\delta(x) = \frac{\bar{x}_{target}-\bar{x}_{original}}{N}
+\end{equation}
+
+\subsubsection{FBA Countermeasures and Considerations}
+
+
+When discussing potential countermeasures to FBA, a tradeoff between responsiveness and security must be established. An obvious, yet sometimes unrealistic, method of prevention is to fully disable online learning completely, and "freeze" the authentication classifier. In many businesses cases, disabling online learning may result in a significant decline in model performance, especially if the feature space is exceptionally dynamic (ie. consumer entertainment and purchasing behavior, which is often a function of seasonality and inherent "drift").
 
 \section{Future Work}
 
@@ -104,6 +118,7 @@ November 2010
 \bibitem{intaglio}
 Van Renesse, R.L.: Optical Document Security, 3rd edn., Artehouse Boston/London
 (2005)
+\bibitem{tempalte_drift} Z. Wang, A. Serwadda, K.Balagani, and Vir V. Phoha, "Transforming animals in a Cyber-Behavioral Biometric Menagerie with Frog-Boiling Attacks" in \textit{The IEEE Fifth International Conference on Biometrics: Theory, Application and Systems (BTAS 2012)}, Washington DC, 2012
 \end{thebibliography}
 
 
