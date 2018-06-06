@@ -39,7 +39,6 @@
 \author{Alice Chang, Karthik Umashankar, Yu Chen}
 \maketitle
 
-
 \begin{abstract}
 Banknote authentication is a high-value task within the financial services industry. In this paper, we perform a validation study and probe into potential vulnerabilities of online machine learning models utilized for this task. In particular, we utilize the work of  "Banknote Authentication" by Gillich and Lohweg\cite{original_paper}. The authors utilized an industry-standard technique of filtering the banknote grayscale image for viable regions of interest, and then performing a novel Shift Invariant Wavelet Transform for the model's feature engineering. We first validate Gillich and Lohweg's findings of 100\% accuracy on holdout datasets using a multitude of models (k-Nearest Neighbors, Support Vector Machine, etc.), and then identify critical thresholds where sample size begins to negative impact the potential performance of a machine learning model once deployed into production.
 \newline\newline
@@ -92,6 +91,8 @@ number_correct_test = np.sum(test_predictions == y_test)
 \subsection{Sample Size Stress Testing}
 
 \subsection{Implementation of Frog Boiling Attack}
+
+The Frog Boiling Attack is
 
 
 \section{Future Work}
