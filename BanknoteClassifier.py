@@ -77,30 +77,29 @@ class BanknoteClassifier:
         return data
 
     def CorruptData(self):
-        # Get the mean values of the test set where class = 0
-        test_set_mean = self.GetMean('test', 0)
 
-        # Get the mean values of the training set where class = 1
-        training_set_mean = self.GetMean('training', 1)
-        # Initialize a new row to be added to the training set
-        corrupt_training_record = [[0 for x in range(4)] for y in range(1)]
+        negative_means = self.GetMean('training', 0)
+        positive_means = self.GetMean('training', 1)
 
-        print(corrupt_training_record)
+        print(self.training_features)
+        print(self.training_class)
+        training_df = pandas.DataFrame(self.training_features)
+        training_positives_df = training_df[self.training_class == 1]
+
+        current_distance = 9999
+        closest_positive = None
+        for i in range(training_positives_df.shape[0]):
+            data_point = training_positives_df.values[i,:]
+            distance = numpy.linalg.norm(data_point - negative_means)
+            if distance < current_distance:
+                closest_positive = data_point
+                current_distance = distance
+
+        print(f"Closest positive data point is {closest_positive}")
         input()
 
-        # The new entry must be one step away from the training set (class 1)
-        # and one step closer to the test set (class 0).
-        for i in range(0, 3):
-            if training_set_mean[i] < test_set_mean[i]:
-                corrupt_training_record[0][i] = training_set_mean[i] + 1
-            elif training_set_mean[i] < test_set_mean[i]:
-                corrupt_training_record[0][i] = training_set_mean[i] - 1
-            else:
-                corrupt_training_record[0][i] = training_set_mean[i]
 
-        # Append the new row to the training features, and set its class to 1
-        self.training_features = numpy.vstack([self.training_features, corrupt_training_record])
-        self.training_class = numpy.append(self.training_class, [1])
+
 
     def GetMean(self, dataset, classification):
 
@@ -125,4 +124,4 @@ class BanknoteClassifier:
         filtered_features = df[targets].values
         means = numpy.mean(filtered_features, axis=0)
         print(f"The means for class {classification} are {means}")
-        return mean
+        return means
