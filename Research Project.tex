@@ -104,10 +104,63 @@ where
 \delta(x) = \frac{\bar{x}_{target}-\bar{x}_{original}}{N}
 \end{equation}
 
-\subsubsection{FBA Countermeasures and Considerations}
+\subsubsection{FBA Countermeasures}
 
+\begin{itemize}
+  \item \textbf{Freezing Online Learning}: When discussing potential countermeasures to FBA, a tradeoff between responsiveness and security must be established. An obvious, yet sometimes unrealistic, method of prevention is to fully disable online learning completely, and "freeze" the authentication classifier. In many businesses cases, disabling online learning may result in a significant decline in model performance, especially if the feature space is exceptionally dynamic (ie. consumer entertainment and purchasing behavior, which is often a function of seasonality and inherent "drift").
+  \item \textbf{Autocorrelation Detection}: An "honest" user (one who is utilizing the business' services as intended) should display no correlation between her submitted banknote data points. No correlation between a user's data points over time equates to each banknote being submitted independently of the prior banknotes (which should be the case if no fraudulent activity is happening).
+  \item \textbf{Batch Model Updates}: The crux of the Frog Boiling Attack is the assumption that the model will not be able to detect small "drift" towards a target template, capitalizing upon the inherent responsiveness of the model towards new data points. However, batching model updates increases the magnitude of "drift", with the hope being that the model is able to successfully detect larger "steps" if we perform model updates in batches. The pseudocode implementation for batching would be as follows:
+\begin{lstlisting}
+for user in users:
+	BATCH_SIZE = 30 # update after user has submitted 30 banknotes
+	batched_datapoints = [] # create a cache of datapoints per user
+	authenticated = receive_data(banknote_datapoint) # ingest datapoint when user submits banknote
+	
+	if banknote_datapoint is authenticated:
+		batched_datapoints.append(banknote_datapoint)
+	else:
+		batched_datapoints = [] # if any authentication points fail, clear the cache
+		
+	if length(batched_datapoints) == BATCH_SIZE: # once cache hits batch size, update the global model
+		update_model(batched_datapoints)
+\end{lstlisting}
+Within this particular implementation, a key hyperparameter to optimize is \lstinline!BATCH_SIZE! This is the number of drift steps taken from the original template to the target template \textit{without updates (ie. model refitting)} before the model returns a negative classification. For instance, in our implementation of frog boiling attack, disabling the online learning model refitting and thereby freezing the model, we receive the following log output:
+\begin{verbatim}
+Closest positive point: [ 0.13 0.01 -0.54  0.24]
+Negative centroid: [ 0.65  0.40 -0.14 0.02]
+Distance from negative centroid:  0.79
+Prediction: [0]
+Classified as negative during iteration 10
+\end{verbatim}
+The simple k-Nearest Neighbors model will accept drift up to 10 steps away before it detects a fraudulent banknote datapoints. Thus, we'd likely set our \lstinline!BATCH_SIZE! to a number significantly higher than 10. This number can be set by repeatedly probing the authentication model with online learning disabled to generate a distribution of \textbf{tolerance thresholds}, or the number of steps taken before the machine learning begins to classify data points as negative. Say we have taken 50 different probes of our model, and the following array of tolerance thresholds are returned:
 
-When discussing potential countermeasures to FBA, a tradeoff between responsiveness and security must be established. An obvious, yet sometimes unrealistic, method of prevention is to fully disable online learning completely, and "freeze" the authentication classifier. In many businesses cases, disabling online learning may result in a significant decline in model performance, especially if the feature space is exceptionally dynamic (ie. consumer entertainment and purchasing behavior, which is often a function of seasonality and inherent "drift").
+\begin{verbatim}
+[ 7.,  4.,  2.,  9., 13.,  9., 10.,  9., 13.,  8.,  8., 14.,  8.,
+10.,  3., 12.,  9., 15., 12.,  8.,  8., 13., 10.,  5.,  8., 15.,
+6., 14.,  8.,  8., 15.,  6.,  6.,  6., 15.,  5., 11., 10.,  9.,
+13., 10., 13.,  7.,  9.,  8., 11., 15.,  8., 10., 16.]
+\end{verbatim}
+
+We can fit these results to a Gaussian distribution, and then find its inverse cumulative distribution function (ICDF) at an acceptable $\alpha$ level. In the context of banknote authentication, given the sensitive nature of financial assets at risk, a relatively stringent $\alpha$ can be selected of 0.001:
+\begin{lstlisting}
+from scipy.stats import norm
+alpha = 0.001
+fitted_mean = 10
+fitted_standard_deviation=3
+threshold = int(norm.ppf(1-alpha, loc=fitted_mean, scale=fitted_standard_deviation))
+print(f"Batch size at alpha level {alpha} is {threshold}")
+# Batch size at alpha level 0.001 is 17
+\end{lstlisting}
+
+Thus, a \lstinline!BATCH_SIZE! of 17 is selected for production deployment to minimize the risk of online learning intrusion attacks like FBA.
+
+ \end{itemize}
+
+\subsubsection{FBA Optimizations}
+
+\begin{itemize}
+\item \textbf{Markov Chain Monte Carlo / Metropolis-Hastings Algorithm}:
+\end{itemize}
 
 \section{Future Work}
 
@@ -118,7 +171,7 @@ November 2010
 \bibitem{intaglio}
 Van Renesse, R.L.: Optical Document Security, 3rd edn., Artehouse Boston/London
 (2005)
-\bibitem{tempalte_drift} Z. Wang, A. Serwadda, K.Balagani, and Vir V. Phoha, "Transforming animals in a Cyber-Behavioral Biometric Menagerie with Frog-Boiling Attacks" in \textit{The IEEE Fifth International Conference on Biometrics: Theory, Application and Systems (BTAS 2012)}, Washington DC, 2012
+\bibitem{template_drift} Z. Wang, A. Serwadda, K.Balagani, and Vir V. Phoha, "Transforming animals in a Cyber-Behavioral Biometric Menagerie with Frog-Boiling Attacks" in \textit{The IEEE Fifth International Conference on Biometrics: Theory, Application and Systems (BTAS 2012)}, Washington DC, 2012
 \end{thebibliography}
 
 

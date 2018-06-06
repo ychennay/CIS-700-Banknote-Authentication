@@ -35,10 +35,10 @@ if __name__ == "__main__":
                 print("New feature space", new_feature_space.shape)
                 predictor.training_features = new_feature_space
                 predictor.training_class = new_class
-                predictor.classifier.fit(new_feature_space, new_class)
+                #predictor.classifier.fit(new_feature_space, new_class)
                 input()
             else: # attacker is caught!
-                print("Classified as negative :(")
+                print(f"Classified as negative during iteration {idx}")
                 break
 
         print("\n\nClassifier: {}\n------------------------------".format(cname))
