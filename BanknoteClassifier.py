@@ -81,8 +81,6 @@ class BanknoteClassifier:
         negative_means = self.GetMean('training', 0)
         positive_means = self.GetMean('training', 1)
 
-        print(self.training_features)
-        print(self.training_class)
         training_df = pandas.DataFrame(self.training_features)
         training_positives_df = training_df[self.training_class == 1]
 
@@ -96,8 +94,9 @@ class BanknoteClassifier:
                 current_distance = distance
 
         print(f"Closest positive data point is {closest_positive}")
-        input()
 
+        distance = closest_positive - negative_means
+        return closest_positive, distance, negative_means
 
 
 
