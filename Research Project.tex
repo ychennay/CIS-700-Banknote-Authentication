@@ -202,7 +202,7 @@ With the above-mentioned approach, we were able to successfully "attack" the sys
 \item With the Neural Network and the KNN classifiers, since we drifted $A_{data}$ towards the mean of $F_{data}$, post the attack, it was only the data point closest to the mean that was classified as authentic. For the attack to succeed on several data points, we need to run it multiple times, once each towards the forged datapoint we want the system to misclassify.
 \item With the Gaussian and the LinearSVC classifiers, with increasing iterations, we were able to classify more of $F_{data}$ as authentic. 
 \item The LinearSVC model chosen by the original researchers performed the worst, with as many as 9 mispredictions post 500 iterations of the attack.
-\item The Random Forest classifier really surprised us by almost always thwarting the attack at around the 30\% mark of the number of iterations. The initial count for the number of data points in the $A_{data}$ is $1097$. For classifiers like KNN (that never detected the "corrupt" data points we were introducing, as forged) you can see that the end of n iterations, the number of data points in the $A_{data}$ set had increased to $1097 + n$. Whereas in the case of Random Forest, even setting the iteration count to as high as 10000 only resulted in the classifier detected the corrupt data point after ~2700 iterations. Not only that, but its test and training accuracy seemed to get better the more iterations we ran.
+\item The Random Forest classifier really surprised us by almost always thwarting the attack at around the 30\% mark of the number of iterations. The initial count for the number of data points in the $A_{data}$ is \textit{1097}. For classifiers like KNN (that never detected the "corrupt" data points we were introducing as forged) you can see that at the end of n iterations, the number of data points in the $A_{data}$ set had increased to \textit{1097 + n}. Whereas in the case of Random Forest, even setting the iteration count to as high as 10000 only resulted in the classifier detected the corrupt data point after \~2700 iterations. Not only that, but its test and training accuracy seemed to get better the more iterations we ran.
 \item We were able to reproduce the attack by starting with the mean value of $A_{data}$, rather than choosing the point closest to $F_{data}$, but it required significantly higher number of iterations (20x) to achieve the same result.
 \end{itemize}
 
@@ -360,9 +360,6 @@ if __name__ == "__main__":
         :param dataset: string option of either test or training
         :param classification: integer 0 or 1 to denote negative or positive
         """
-        mean = []
-        for i in range(0, 3):
-            mean.append(0)
         if dataset == 'test':
             class_source = self.test_class
             feature_source = self.test_features
@@ -380,9 +377,8 @@ if __name__ == "__main__":
 if __name__ == "__main__":
     predictor = BanknoteClassifier(dataset='data/dataset.csv')
     # for each classifier of our choosing
-    for cname in ['knn']:  # ['linear', 'random_forest', 'neural_network', 'gaussian', 'knn']:
-        # interate 100 times, classifying, and corrupting the dataset using previous classification results
-
+    for cname in ['linear', 'random_forest', 'neural_network', 'gaussian', 'knn']:
+        # interate N times, classifying, and corrupting the dataset using previous classification results
         result = predictor.Classify(classifier=cname)
         closest_positive, distance, negative_mean = predictor.CorruptData()
         STEPS = 50
@@ -405,7 +401,7 @@ if __name__ == "__main__":
                 print("New feature space", new_feature_space.shape)
                 predictor.training_features = new_feature_space
                 predictor.training_class = new_class
-                #predictor.classifier.fit(new_feature_space, new_class)
+                predictor.classifier.fit(new_feature_space, new_class)
                 input()
             else: # attacker is caught!
                 print(f"Classified as negative during iteration {idx}")
