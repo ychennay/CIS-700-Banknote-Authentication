@@ -40,13 +40,13 @@
 \maketitle
 
 \begin{abstract}
-Banknote authentication is a high-value task within the financial services industry. In this paper, we perform a validation study and probe into potential vulnerabilities of online machine learning models utilized for this task. In particular, we utilize the work of  "Banknote Authentication" by Gillich and Lohweg\cite{original_paper}. The authors utilized an industry-standard technique of filtering the banknote grayscale image for viable regions of interest, and then performing a novel Shift Invariant Wavelet Transform for the model's feature engineering. We first validate Gillich and Lohweg's findings of 100\% accuracy on holdout datasets using a multitude of models (k-Nearest Neighbors, Support Vector Machine, etc.), and then identify critical thresholds where sample size begins to negative impact the potential performance of a machine learning model once deployed into production.
+Banknote authentication is a high-value task within the financial services industry. In this paper, we perform a validation study and probe into potential vulnerabilities of online machine learning models utilized for this task. In particular, we utilize the work of "Banknote Authentication" by Gillich and Lohweg\cite{original_paper}. The authors utilized an industry-standard technique of filtering the banknote grayscale image for viable regions of interest, and then performing a novel Shift Invariant Wavelet Transform for the model's feature engineering. We first validate Gillich and Lohweg's findings of 100\% accuracy on holdout datasets using a multitude of models (k-Nearest Neighbors, Support Vector Machine, etc.), and then identify critical thresholds where sample size begins to negative impact the potential performance of a machine learning model once deployed into production.
 \newline\newline
 We conclude by investigating potential vulnerabilities an online machine learning system can encounter, namely the Frog Boiling Attack. We outline a potential implementation of this type of penetration attack and highlight various potential countermeasures to mitigate its negative impact on a machine learning system in production.
 \end{abstract}
 
 \section{Introduction}
-The Intaglio technique used within banknote printing allows for an unmatched sharpness in contrast through a feelable relief\cite{intaglio} .This technique forms a vital component of modern-day banknote authenticity verification. In the initial phase of authentication, \textbf{image digitization} occurs where the banknote's relief is captured through industry-grade cameras to produce an image grayscale that can be then undergo a feature transformation, such as the Wavelet Transform (WT). Prior to feature transformation, various \textbf{Regions of Interest (ROI)}.  Regions with low mean and variance in grayscale values of the various blocks are selected:
+The Intaglio technique used within banknote printing allows for an unmatched sharpness in contrast through a feelable relief\cite{intaglio}. This technique forms a vital component of modern-day banknote authenticity verification. In the initial phase of authentication, \textbf{image digitization} occurs where the banknote's relief is captured through industry-grade cameras to produce an image grayscale that can be then undergo a feature transformation, such as the Wavelet Transform (WT). Prior to feature transformation, various \textbf{Regions of Interest (ROI)}. Regions with low mean and variance in grayscale values of the various blocks are selected:
 \begin{figure}
   \caption{A scatter plot from Gillich and Lohweg, 2010 showing the decision boundaries for selection of viable regions of interest. The circles are classified as appropriate ROIs while the squares are discarded for non-homogeneity or high mean grayscale values.}
   \centering
@@ -126,19 +126,19 @@ for user in users:
 \end{lstlisting}
 Within this particular implementation, a key hyperparameter to optimize is \lstinline!BATCH_SIZE! This is the number of drift steps taken from the original template to the target template \textit{without updates (ie. model refitting)} before the model returns a negative classification. For instance, in our implementation of frog boiling attack, disabling the online learning model refitting and thereby freezing the model, we receive the following log output:
 \begin{verbatim}
-Closest positive point: [ 0.13 0.01 -0.54  0.24]
-Negative centroid: [ 0.65  0.40 -0.14 0.02]
-Distance from negative centroid:  0.79
+Closest positive point: [ 0.13 0.01 -0.54 0.24]
+Negative centroid: [ 0.65 0.40 -0.14 0.02]
+Distance from negative centroid: 0.79
 Prediction: [0]
 Classified as negative during iteration 10
 \end{verbatim}
 The simple k-Nearest Neighbors model will accept drift up to 10 steps away before it detects a fraudulent banknote datapoints. Thus, we'd likely set our \lstinline!BATCH_SIZE! to a number significantly higher than 10. This number can be set by repeatedly probing the authentication model with online learning disabled to generate a distribution of \textbf{tolerance thresholds}, or the number of steps taken before the machine learning begins to classify data points as negative. Say we have taken 50 different probes of our model, and the following array of tolerance thresholds are returned:
 
 \begin{verbatim}
-[ 7.,  4.,  2.,  9., 13.,  9., 10.,  9., 13.,  8.,  8., 14.,  8.,
-10.,  3., 12.,  9., 15., 12.,  8.,  8., 13., 10.,  5.,  8., 15.,
-6., 14.,  8.,  8., 15.,  6.,  6.,  6., 15.,  5., 11., 10.,  9.,
-13., 10., 13.,  7.,  9.,  8., 11., 15.,  8., 10., 16.]
+[ 7., 4., 2., 9., 13., 9., 10., 9., 13., 8., 8., 14., 8.,
+10., 3., 12., 9., 15., 12., 8., 8., 13., 10., 5., 8., 15.,
+6., 14., 8., 8., 15., 6., 6., 6., 15., 5., 11., 10., 9.,
+13., 10., 13., 7., 9., 8., 11., 15., 8., 10., 16.]
 \end{verbatim}
 
 We can fit these results to a Gaussian distribution, and then find its inverse cumulative distribution function (ICDF) at an acceptable $\alpha$ level. In the context of banknote authentication, given the sensitive nature of financial assets at risk, a relatively stringent $\alpha$ can be selected of 0.001:
