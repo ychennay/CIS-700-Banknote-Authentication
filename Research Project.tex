@@ -134,33 +134,36 @@ Deployment of any machine learning authentication model requires strict threshol
 
 \subsection{Experimental Procedure}
 
-We ran multiple iterations of our models (K-Nearest Neighbors, Gaussian Mixture Model, Support Vector Machine, Neural Network) across multiple 
+We ran multiple iterations of our models (K-Nearest Neighbors, Gaussian Mixture Model, Support Vector Machine, Neural Network) across multiple different segmentations of train/test splits. We then measured the accuracy at each iteration and visualized the degradation of performance on both the test and training datasets.
 
 \subsection{Experimental Results}
 
-We found that elbow points in drops of accuracy existed for most classifiers as we increased the percentage of the data points allocated towards the test set.
-
-
+We found that elbow points in drops of accuracy existed for most classifiers as we increased the percentage of the data points allocated towards the test set. The green dots below show performance on the training set, and the red dots show performance on the test set.
 \begin{figure}
 \centering
-\begin{subfigure}{.5\textwidth} 
 \includegraphics[width=60mm]{NN.png}
-  \caption{Neural Network}
-  \end{subfigure}%
-\begin{subfigure}{.5\textwidth} 
+  \caption{Neural Network performance as training samples decrease.}
+  \end{figure}
+  \newline
+\begin{figure} 
+\centering
 \includegraphics[width=60mm]{gaussian.png}
-  \caption{Gaussian Mixture Model}
-    \end{subfigure}%
-    
-    \begin{subfigure}{.5\textwidth} 
+  \caption{GMM performance as training samples decrease.}
+    \end{figure}
+      \newline
+    \begin{figure}
+    \centering
 \includegraphics[width=60mm]{KNN.png}
-  \caption{K Nearest Neighbors}
-      \end{subfigure}%
-          \begin{subfigure}{.5\textwidth} 
+  \caption{KNN performance as training samples decrease.}
+      \end{figure}
+        \newline
+          \begin{figure}
+          \centering
 \includegraphics[width=60mm]{linear.png}
-  \caption{Support Vector Linear Classifier}
-        \end{subfigure}%
-\end{figure}
+  \caption{SVC performance as training samples decrease.}
+        \end{figure}
+
+Our results suggest that more robust and complex models, such as the neural network, are able to generalize the decision boundaries between authenticated and forged banknotes even with relatively few data samples. In our example, we typically saw accuracy begin to drop significantly when 70\%-80\% of the dataset was allocated towards testing (especially for the K Nearest Neighbors and Gaussian Mixture Model). Given our initial dataset size of 1,500 points, this suggests that there is a significant dropoff in performance with training samples under 500 points.
 
 \subsection{Implementation of Frog Boiling Attack (FBA)}
 \subsubsection{Overview}
