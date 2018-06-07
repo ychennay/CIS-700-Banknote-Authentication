@@ -43,59 +43,56 @@
 \maketitle
 
 \begin{abstract}
-Detecting counterfeit currency has been an issue since the dawn of currency. While human analysts have historically been able to leverage the unique features of genuine banknotes to identify counterfeit, the prevalence of increasingly sophisticated scanning and printing technology has made the distinction far less discernable for the human analyst. This challenge was tackled previously by two researchers ? Dr. Volker Lohweg and Eugen Gillich ? who utilized a novel Shift-Invariant Wavelet Transform to obtain feature vectors representing the printed  detail on both authentic and counterfeit banknotes. As they were able to achieve 100\% classification accuracy using a Support Vector Machine with a second-order polynomial kernel\cite{original_paper}. The authors utilized an industry-standard technique of filtering the banknote grayscale image for viable regions of interest, and then performing a novel Shift Invariant Wavelet Transform for the model's feature engineering. We first validate Gillich and Lohweg's findings of 100\% accuracy on holdout datasets using a multitude of models (k-Nearest Neighbors, Support Vector Machine, etc.), and then identify critical thresholds where sample size begins to negative impact the potential performance of a machine learning model once deployed into production.
+Counterfeits have been an issue since the dawn of currency. While human analysts have historically been able to leverage the unique features of genuine banknotes to identify counterfeit, the prevalence of increasingly sophisticated scanning and printing technology has made the distinction far less discernable for the human analyst. This challenge was tackled previously by two researchers - Dr. Volker Lohweg and Eugen Gillich - who utilized a novel Shift-Invariant Wavelet Transform to obtain feature vectors representing the printed detail on both authentic and counterfeit banknotes; they were able to achieve 100\% classification accuracy using a Support Vector Machine with a second-order polynomial kernel\cite{original_paper}. The authors utilized an industry-standard technique of filtering the banknote grayscale image for viable regions of interest, and then performing a novel Shift Invariant Wavelet Transform for the model's feature engineering. We first validated Gillich and Lohweg's findings of 100\% accuracy on holdout datasets using a multitude of models (k-Nearest Neighbors, Support Vector Machine, etc.), and then identified critical thresholds where sample size begins to negatively impact the potential performance of a machine learning model once deployed into production.
 \newline\newline
-We conclude by investigating potential vulnerabilities an online machine learning system can encounter, specifically the Frog Boiling Attack. We outline a potential implementation of this type of penetration attack. In our experiments, depending on the classifier that was chosen, we were able to get the system to successfully mis-predict a forged data point as authentic in as few as 50 iterations. The complexity of the classifier did no€™t offer better protection against the attack. We saw that the simple k-Nearest-Neighbor performed better than the Support Vector Machine \& Gaussian models.
-
+We conclude by investigating potential vulnerabilities an online machine learning system can encounter, specifically the Frog Boiling Attack. We outline a potential implementation of this type of penetration attack. In our experiments, depending on the classifier that was chosen, we were able to get the system to successfully mis-predict a forged data point as authentic in as few as 50 iterations. The complexity of the classifier did not offer better protection against the attack; simple models like k-Nearest Neighbors performed better than the Support Vector Machine \& Gaussian models.
+\newline\newline
 We also highlight various potential countermeasures to mitigate its negative impact on a machine learning system in production.
 \end{abstract}
 
 \section{Introduction}
-According to US Federal Reserve, the \$20 is the most frequently counterfeited bill domestically. On the other hand, the \$100 note is the most frequently counterfeited bill internationally, with half to two-thirds of the \$900 billion value in circulation outside of the US. [2] Recent technology has advanced to the point where the printing of high-fidelity counterfeit cash can be successfully achieved by a novice with a commonplace inkjet printer. Once counterfeit cash has been discovered in circulation, businesses and the general public bear the brunt of the resulting monetary loss, as the counterfeits are usually surrendered to law enforcement with no hope for reimbursement. Additionally, loss of currency credibility negatively impacts national creditworthiness, making accurate banknote validation a vital part of maintaining financial security.
-
-Many anti-fraud features have been added to currency, some of which include the 3-D security ribbon, color-shifting numbers, watermarking, and a UV-sensitive security thread. Interestingly enough, however, Dr. Lohweg and Mr. Gillich discovered that analyzing key features from a banknote?s Intaglio printing technique is still fruitful even as the difference in quality between genuine and counterfeit currency becomes indistinguishable to the human eye.
-
+According to US Federal Reserve, the \$20 is the most frequently counterfeited bill domestically. On the other hand, the \$100 note is the most frequently counterfeited bill internationally, with half to two-thirds of the \$900 billion value in circulation outside of the US\cite{intro_cite}. Recent technology has advanced to the point where the printing of high-fidelity counterfeit cash can be successfully achieved by a novice with a commonplace inkjet printer. Once counterfeit cash has been discovered in circulation, businesses and the general public bear the brunt of the resulting monetary loss, as the counterfeits are usually surrendered to law enforcement with no hope for reimbursement. Additionally, loss of currency credibility negatively impacts national creditworthiness, making accurate banknote validation a vital part of maintaining financial security.
+\newline\newline
+Many anti-fraud features have been added to currency, some of which include the 3-D security ribbon, color-shifting numbers, watermarking, and a UV-sensitive security thread. Interestingly enough, however, Dr. Lohweg and Mr. Gillich discovered that analyzing key features from a banknote's Intaglio printing technique is still fruitful even as the difference in quality between genuine and counterfeit currency becomes indistinguishable to the human eye.
+\newline\newline
 The Intaglio technique used within banknote printing allows for an unmatched sharpness in contrast through a feelable relief\cite{intaglio}. This technique forms a vital component of modern-day banknote authenticity verification. In the initial phase of authentication, \textbf{image digitization} occurs where the banknote relief is captured through industry-grade cameras to produce an image grayscale that can be then undergo a feature transformation, such as the Wavelet Transform (WT). Prior to feature transformation, various \textbf{Regions of Interest (ROI)}. Regions with low mean and variance in grayscale values of the various blocks are selected:
 \begin{figure}
   \caption{A scatter plot from Gillich and Lohweg, 2010 showing the decision boundaries for selection of viable regions of interest. The circles are classified as appropriate ROIs while the squares are discarded for non-homogeneity or high mean grayscale values.}
   \centering
 \includegraphics[width=80mm]{roi_selection.png}
 \end{figure}
-
+\newline\newline
 We make use of their public data set to test out the performances of different classifiers, and take the resilient ones to task using the Frog Boiling Attack to measure their fragility. We also stress test the size of the data set to determine an optimal point between increasing the sampling size and the point of diminishing returns.
 \section{Related Work}
 As our work draws heavily on the previous research done by Dr. Lohweg and Gillich, it seems appropriate to explain their process in order to understand our data set. Their foundational premise is that the Intaglio printing technique, long used in the financial industry as a vital component to authenticity verification by providing unmatched sharpness in contrast and distinctive tactile qualities, could still be leveraged by machine learning to classify authentic banknotes from their counterfeit. Their work comprised of four parts: digitizing Regions of Interest (ROI) on a banknote, identifying the viable ROI from the unusable, dividing the regions into discrete sub-regions in grayscale, and using the median value and the standard deviations from the mean grayscale values as classifiable features. The ROI consisted of areas on the banknote where the printed image was detailed enough so as to capture a fairly uniform grayscale region with small standard deviation and low median value.
-
 \begin{figure}
   \centering
 \includegraphics[width=80mm]{roi_distinguish.png}
   \caption{Distinguishing usefulness of ROI (left side) from their resulting mean values (right side): (a) is inhomogeneous and contains a more varied printing structure; (b) has a fairly uniform mean grayscale value and is ideal for authentication.}
 \end{figure}
-
-When charted, the viable and unusable regions were unambiguous. (See Fig. 1)
-The researchers then applied their novel two-dimensional wavelet transform (the Shift Invariant Wavelet Transform) to capture the scaling and structure of these ROIs and analyze the resulting statistical features from the standardized histograms of the wavelet coefficients 
+\newline\newline
+When charted, the viable and unusable regions were unambiguous (See Fig. 1). The researchers then applied their novel two-dimensional wavelet transform (the Shift Invariant Wavelet Transform) to capture the scaling and structure of these ROIs and analyze the resulting statistical features from the standardized histograms of the wavelet coefficients 
 \begin{figure}
   \centering
 \includegraphics[width=80mm]{histogram.png}
   \caption{Histogram of wavelet coefficients after SWT: (a) from Genuine banknote; 
 (b) from High-Quality forgery; and (c) from Low-Quality forgery.}
 \end{figure}
-
+\newline\newline
 Additionally, using the Support Vector Machine polynomial kernel model to find clusters provided very clear classification between forged and genuine banknotes, with two discarded outliers that were ignored due to ambiguity of their appropriate classification.
-
 \begin{figure}
   \centering
 \includegraphics[width=80mm]{feature_space.png}
   \caption{Feature space using variance (feature 1), skewness (feature 2), and kurtosis (feature 3)}
 \end{figure}
-
-The resulting 1371 data points? extracted features became the starting point of our research. 
+\newline\newline
+The resulting 1371 data points' extracted features became the starting point of our research. 
 
 \section{Experiments}
 
 \subsection{Validation of Model Performances}
 In their original paper, Gillich and Lohweg assert that 100\% accuracy can be achieved as a result of judicious Region of Interest selection and the Shift Invariant Transform. To validate, we performed basic data processing, scaling the dataset so that each feature column $k$ had $\mu_{k} = 0$ and a $\sigma_{k} = 1$:
-
+\newline\newline
 \begin{lstlisting}
 import pandas as pd
 import numpy as np
@@ -111,9 +108,7 @@ features_names = features_df.columns.values # save the column names
 features_matrix = features_df.values # convert X from a dataframe to a matrix (for our machine learning models)
 scaled_features_matrix = StandardScaler().fit_transform(features_matrix) # scale the data so mean = 0, unit variance - important for many models
 \end{lstlisting}
-
 The cleaned \lstinline{scaled_features_matrix} Numpy object can then be fed into a variety of different models:
-
 \begin{lstlisting}
 logistic_regression = LogisticRegression()
 logistic_regression.fit(X_train, y_train)
@@ -124,7 +119,6 @@ test_predictions = logistic_regression.predict(X_test)
 number_correct = np.sum(training_predictions == y_train)
 number_correct_test = np.sum(test_predictions == y_test)
 \end{lstlisting}
-
 The fact that we were able to achieve 100\% accuracy on holdout sets speaks to the effectiveness of the feature engineering mechanism that Gillich and Lohweg utilized. Their Region of Interest selection methodology, combined with Shift Invariant Transform, takes a highly dimensional data (grayscales of banknote images), and partitions the data so clearly based upon the decision boundary of authenticated/forged that even basic linear classifiers such as the Logistic Regression are able to achieve remarkably strong classification performance.
 
 \subsection{Sample Size Stress Testing}
@@ -138,7 +132,7 @@ We ran multiple iterations of our models (K-Nearest Neighbors, Gaussian Mixture 
 
 \subsection{Experimental Results}
 
-We found that elbow points in drops of accuracy existed for most classifiers as we increased the percentage of the data points allocated towards the test set. The green dots below show performance on the training set, and the red dots show performance on the test set.
+We found that elbow points in drops of accuracy existed for most classifiers as we increased the percentage of the data points allocated towards the test set. The green triangles below show performance on the training set, and the red circles show performance on the test set.
 \begin{figure}
 \centering
 \includegraphics[width=60mm]{NN.png}
@@ -162,12 +156,11 @@ We found that elbow points in drops of accuracy existed for most classifiers as 
 \includegraphics[width=60mm]{linear.png}
   \caption{SVC performance as training samples decrease.}
         \end{figure}
-
+\newline\newline
 Our results suggest that more robust and complex models, such as the neural network, are able to generalize the decision boundaries between authenticated and forged banknotes even with relatively few data samples. In our example, we typically saw accuracy begin to drop significantly when 70\%-80\% of the dataset was allocated towards testing (especially for the K Nearest Neighbors and Gaussian Mixture Model). Given our initial dataset size of 1,500 points, this suggests that there is a significant dropoff in performance with training samples under 500 points.
 
 \subsection{Implementation of Frog Boiling Attack (FBA)}
 \subsubsection{Overview}
-
 The Frog Boiling Attack is most effective during business contexts where online learning occurs (when data arrives as a stream and becomes ingested sequentially, with the fitted model updated after each new data point). The attack relies upon the concept of template drift\cite{template_drift}, where the model's fitted "template" of an authentic banknote data sample is corrupted over time by a stream of compromised data points. The overall implementation, implemented over $N$ steps, relies upon the update equation
 
 \begin{equation}
@@ -183,20 +176,18 @@ where
 \subsubsection{Experimental Procedure}
 
 In our experiments, we determined that the value of $\delta(x)$ is quite crucial in mounting a successful frog boiling attack. The idea behind the attack is to pass off forged banknotes as authentic, so, we should try to get the classifier to determine as many forged notes in the test data set as possible, as authentic. For this reason, for the remainder of this paper, when we refer to the authentic data set ($A_{data}$), it refers to the records in the training set that were classified as authentic, and when we refer to the forged data set ($F_{data}$), it refers to the records in the test set that were classified as forged.
-\newline
-\newline
-In each iteration, we start off by calculating the mean (centroid) of all values in $F_{data}$, and find the point in $A_{data}$ thatâ€™s closest to the centroid, letâ€™s call it CAD (closest authentic data point). We then generate a new fake data point (FDP) by adding a tiny incremental value to the CAD. This incremental value is given by the formula
+\newline\newline
+In each iteration, we start off by calculating the mean (centroid) of all values in $F_{data}$, and find the point in $A_{data}$ that's closest to the centroid, let's call it CAD (closest authentic data point). We then generate a new fake data point (FDP) by adding a tiny incremental value to the CAD. This incremental value is given by the formula
 
 \begin{equation}
-\frac{D_{CAD,TeF}}{N}
+\frac{D_{CAD,F-CEN}}{N}
 \end{equation}
 
-where $D_{CAD, TeF}$ is defined as the Euclidean distance between the closest authenticated data point and the center of the trained forged data.
-\newline
+where $D_{CAD,F-CEN}$ is defined as the Euclidean distance between the closest authenticated data point and the center of the trained forged data.
+\newline\newline
 We then add this new FDP back into $A_{data}$, manually assign it a classification of authentic, refit the model, and predict the classification of the FDP. If the classification is forged, we stop right there (as our attack is compromised). If the classification is authentic, we proceed to the next iteration.
 \newline\newline
 With the above-mentioned approach, we were able to successfully "attack" the system into incorrectly predicting a forged banknote as authentic. We ran the algorithm against five different classifiers, and some of them displayed a stronger aversion to false detection than the others, but with enough iterations, we were able to crack them all eventually (with the exception of the Random Forest classifier). The tables below detail the results, with the highlighted row indicating where we saw a drop in the accuracy.
-
 
 \subsubsection{FBA Experimental Results}
 \includegraphics[width=125mm]{linear_svc_results.png}
@@ -236,7 +227,7 @@ A crude, baseline implementation can be adopted to identify users perpetuating f
 \item If the traversal vector and the user's drifted banknote data points are highly correlated, this person is a prime candidate for submitting forged banknotes and further investigation is required.
 \end{itemize}
   
-  \item \textbf{Batch Model Updates}: The crux of the Frog Boiling Attack is the assumption that the model will not be able to detect small "drift" towards a target template, capitalizing upon the inherent responsiveness of the model towards new data points. However, batching model updates increases the magnitude of "drift", with the hope being that the model is able to successfully detect larger "steps" if we perform model updates in batches. The pseudocode implementation for batching would be as follows:
+\item \textbf{Batch Model Updates}: The crux of the Frog Boiling Attack is the assumption that the model will not be able to detect small "drift" towards a target template, capitalizing upon the inherent responsiveness of the model towards new data points. However, batching model updates increases the magnitude of "drift", with the hope being that the model is able to successfully detect larger "steps" if we perform model updates in batches. The pseudocode implementation for batching would be as follows:
 \begin{lstlisting}
 for user in users:
 	BATCH_SIZE = 30 # update after user has submitted 30 banknotes
@@ -287,7 +278,7 @@ Thus, a \lstinline!BATCH_SIZE! of 17 is selected for production deployment to mi
 \section{Future Work}
 There is a healthy amount of research going into detecting counterfeit currency with machine learning, much of which leverage some variation of printing noise (such as our research), but there is also UV reactivity feature detection, as well as electromagnetic conductivity on various regions of a bill. It would be interesting to see whether the inclusion of these features would further strengthen or degrade the results of a classifier.
 
-Furthermore, as a lot of these features require use of some sophisticated or commercial-grade equipment to extract the needed level of detail, more research could be done into the feature extraction and resulting accuracy rates of methods more available to the general populace ? such as feature extraction from using a camera from a mobile device. After all, small businesses and individuals also have a vested interest in ensuring the authenticity of the currency passing through their hands.
+Furthermore, as a lot of these features require use of some sophisticated or commercial-grade equipment to extract the needed level of detail, more research could be done into the feature extraction and resulting accuracy rates of methods more available to the general populace - such as feature extraction using a camera in a mobile device. After all, small businesses and individuals also have a vested interest in ensuring the authenticity of the currency passing through their hands.
 \begin{appendices}
 \section{Python Source Code}
 \subsection{Sample Size Stress Testing}
