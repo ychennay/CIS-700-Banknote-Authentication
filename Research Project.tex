@@ -42,7 +42,9 @@
 \begin{abstract}
 Banknote authentication is a high-value task within the financial services industry. In this paper, we perform a validation study and probe into potential vulnerabilities of online machine learning models utilized for this task. In particular, we utilize the work of "Banknote Authentication" by Gillich and Lohweg\cite{original_paper}. The authors utilized an industry-standard technique of filtering the banknote grayscale image for viable regions of interest, and then performing a novel Shift Invariant Wavelet Transform for the model's feature engineering. We first validate Gillich and Lohweg's findings of 100\% accuracy on holdout datasets using a multitude of models (k-Nearest Neighbors, Support Vector Machine, etc.), and then identify critical thresholds where sample size begins to negative impact the potential performance of a machine learning model once deployed into production.
 \newline\newline
-We conclude by investigating potential vulnerabilities an online machine learning system can encounter, namely the Frog Boiling Attack. We outline a potential implementation of this type of penetration attack and highlight various potential countermeasures to mitigate its negative impact on a machine learning system in production.
+We conclude by investigating potential vulnerabilities an online machine learning system can encounter, specifically the Frog Boiling Attack. We outline a potential implementation of this type of penetration attack. In our experiments, depending on the classifier that was chosen, we were able to get the system to successfully mis-predict a forged data point as authentic in as few as 50 iterations. The complexity of the classifier didn’t offer better protection against the attack. We saw that the simple k-Nearest-Neighbor performed better than the Support Vector Machine \& Gaussian models.
+
+We also highlight various potential countermeasures to mitigate its negative impact on a machine learning system in production.
 \end{abstract}
 
 \section{Introduction}
@@ -108,38 +110,37 @@ where
 
 \subsubsection{Experimental Procedure}
 
-In our experiments, we determined that the value of $\delta(x)$ is quite crucial in mounting a successful frog boiling attack. To understand the experiment correctly, let us visualize the dataset as broken down into four categories: 
-
-\begin{itemize}
-  \item \textbf{Training Authentic (TrA)}:Data points in the training set that are from authentic banknotes.
-  \item \textbf{Training Forged (TrF)}: Data points in the training set that are from forged banknotes.
-\end{itemize}
-
-The idea behind the attack is to pass off forged banknotes as authentic, so, we should try to get the classifier to determine as many forged notes in the test data set as possible, as authentic. For this reason, we will not concern ourselves anymore with data sets TrF and TeA, and will be primarily focused on TrA and TeF. In each iteration, we start off by calculating the mean (centroid) of all values in the TeF dataset, and find the point in the TrA data set that is closest to the centroid. We will call it CAD (closest authentic data point). We then generate a new fake data point (FDP) by adding a tiny incremental value to the CAD. This incremental value is given by the formula
+In our experiments, we determined that the value of $\delta(x)$ is quite crucial in mounting a successful frog boiling attack. The idea behind the attack is to pass off forged banknotes as authentic, so, we should try to get the classifier to determine as many forged notes in the test data set as possible, as authentic. For this reason, for the remainder of this paper, when we refer to the authentic data set ($A_{data}$), it refers to the records in the training set that were classified as authentic, and when we refer to the forged data set ($F_{data}$), it refers to the records in the test set that were classified as forged.
+\newline
+\newline
+In each iteration, we start off by calculating the mean (centroid) of all values in $F_{data}$, and find the point in $A_{data}$ that’s closest to the centroid, let’s call it CAD (closest authentic data point). We then generate a new fake data point (FDP) by adding a tiny incremental value to the CAD. This incremental value is given by the formula
 
 \begin{equation}
 \frac{D_{CAD,TeF}}{N}
 \end{equation}
 
 where $D_{CAD, TeF}$ is defined as the Euclidean distance between the closest authenticated data point and the center of the trained forged data.
+\newline
+We then add this new FDP back into $A_{data}$, manually assign it a classification of authentic, refit the model, and predict the classification of the FDP. If the classification is forged, we stop right there (as our attack is compromised). If the classification is authentic, we proceed to the next iteration.
+\newline\newline
+With the above-mentioned approach, we were able to successfully "attack" the system into incorrectly predicting a forged banknote as authentic. We ran the algorithm against five different classifiers, and some of them displayed a stronger aversion to false detection than the others, but with enough iterations, we were able to crack them all eventually (with the exception of the Random Forest classifier). The tables below detail the results, with the highlighted row indicating where we saw a drop in the accuracy.
 
-We then add this new FDP back into the TrA data set, manually assign it a classification of authentic, refit the model, and predict the classification of the FDP. If the classification is forged, we stop right there (as our attack is compromised). If the classification is authentic, we proceed to the next iteration.
-With the above-mentioned approach, we were able to successfully ?attack? the system into incorrectly predicting a forged banknote as authentic. We ran the algorithm against five different classifiers, and some of them displayed a stronger aversion to false detection than the others, but with enough iterations, we were able to crack them all eventually. The tables below detail the results, with the highlighted row indicating where we saw a drop in the accuracy.
 
 \subsubsection{FBA Experimental Results}
-\includegraphics[width=125mm]{rf_results.png}
 \includegraphics[width=125mm]{linear_svc_results.png}
 \includegraphics[width=125mm]{neural_network.png}
 \includegraphics[width=125mm]{gaussian_results.png}
+\includegraphics[width=125mm]{knn_results.png}
+\includegraphics[width=125mm]{rf_results.png}
 
 \subsubsection{Analysis of FBA Experimental Results}
 
 \begin{itemize}
-\item With the Neural Network and the KNN classifiers, since we drifted the TrA dataset towards the mean of the TeF dataset, post the attack, it was only the data point closest to the mean that was classified as authentic. For the attack to succeed on several data points, we need to run it multiple times, once each towards the forged datapoint we want the system to misclassify.
-\item With the Gaussian and the LinearSVC classifiers, with increasing iterations, we were able to classify more of the TeF dataset as authentic. 
+\item With the Neural Network and the KNN classifiers, since we drifted $A_{data}$ towards the mean of $F_{data}$, post the attack, it was only the data point closest to the mean that was classified as authentic. For the attack to succeed on several data points, we need to run it multiple times, once each towards the forged datapoint we want the system to misclassify.
+\item With the Gaussian and the LinearSVC classifiers, with increasing iterations, we were able to classify more of $F_{data}$ as authentic. 
 \item The LinearSVC model chosen by the original researchers performed the worst, with as many as 9 mispredictions post 500 iterations of the attack.
-\item The Random Forest classifier really surprised us by almost always thwarting the attack at around the 30\% mark of the number of iterations. The initial count for the number of data points in the TrA data set is 1097. For classifiers like KNN (that never detected the corrupt data points we were introducing, as forged) you can see that the end of n iterations, the number of data points in the TrA set had increased to $1097 + n$. Whereas in the case of Random Forest, even setting the iteration count to as high as 10000 only resulted in the classifier detected the corrupt data point after ~2700 iterations. Not only that, but its test and training accuracy seemed to get better the more iterations we ran.
-\item We were able to reproduce the attack by starting with the mean value of the TrA dataset, rather than choosing the point closest to the TeF dataset, but it required significantly higher number of iterations (20x) to achieve the same result.
+\item The Random Forest classifier really surprised us by almost always thwarting the attack at around the 30\% mark of the number of iterations. The initial count for the number of data points in the $A_{data}$ is $1097$. For classifiers like KNN (that never detected the "corrupt" data points we were introducing, as forged) you can see that the end of n iterations, the number of data points in the $A_{data}$ set had increased to $1097 + n$. Whereas in the case of Random Forest, even setting the iteration count to as high as 10000 only resulted in the classifier detected the corrupt data point after ~2700 iterations. Not only that, but its test and training accuracy seemed to get better the more iterations we ran.
+\item We were able to reproduce the attack by starting with the mean value of $A_{data}$, rather than choosing the point closest to $F_{data}$, but it required significantly higher number of iterations (20x) to achieve the same result.
 \end{itemize}
 
 \subsubsection{FBA Countermeasures}
