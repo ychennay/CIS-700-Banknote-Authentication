@@ -7,6 +7,8 @@
 \usepackage{amsmath}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{subcaption}
 \usepackage[title]{appendix}
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
@@ -62,7 +64,7 @@ The Intaglio technique used within banknote printing allows for an unmatched sha
 
 We make use of their public data set to test out the performances of different classifiers, and take the resilient ones to task using the Frog Boiling Attack to measure their fragility. We also stress test the size of the data set to determine an optimal point between increasing the sampling size and the point of diminishing returns.
 \section{Related Work}
-As our work draws heavily on the previous research done by Dr. Lohweg and Gillich, it seems appropriate to explain their process in order to understand our data set. Their foundational premise is that the Intaglio printing technique, long used in the financial industry as a vital component to authenticity verification by providing unmatched sharpness in contrast and distinctive tactile qualities, could still be leveraged by machine learning to classify authentic banknotes from their counterfeit. Their work comprised of four parts ? digitizing Regions of Interest (ROI) on a banknote, identifying the viable ROI from the unusable, dividing the regions into discrete sub-regions in grayscale, and using the median value and the standard deviations from the mean grayscale values as classifiable features. The ROI consisted of areas on the banknote where the printed image was detailed enough so as to capture a fairly uniform grayscale region with small standard deviation and low median value.
+As our work draws heavily on the previous research done by Dr. Lohweg and Gillich, it seems appropriate to explain their process in order to understand our data set. Their foundational premise is that the Intaglio printing technique, long used in the financial industry as a vital component to authenticity verification by providing unmatched sharpness in contrast and distinctive tactile qualities, could still be leveraged by machine learning to classify authentic banknotes from their counterfeit. Their work comprised of four parts: digitizing Regions of Interest (ROI) on a banknote, identifying the viable ROI from the unusable, dividing the regions into discrete sub-regions in grayscale, and using the median value and the standard deviations from the mean grayscale values as classifiable features. The ROI consisted of areas on the banknote where the printed image was detailed enough so as to capture a fairly uniform grayscale region with small standard deviation and low median value.
 
 \begin{figure}
   \centering
@@ -123,10 +125,42 @@ number_correct = np.sum(training_predictions == y_train)
 number_correct_test = np.sum(test_predictions == y_test)
 \end{lstlisting}
 
+The fact that we were able to achieve 100\% accuracy on holdout sets speaks to the effectiveness of the feature engineering mechanism that Gillich and Lohweg utilized. Their Region of Interest selection methodology, combined with Shift Invariant Transform, takes a highly dimensional data (grayscales of banknote images), and partitions the data so clearly based upon the decision boundary of authenticated/forged that even basic linear classifiers such as the Logistic Regression are able to achieve remarkably strong classification performance.
+
 \subsection{Sample Size Stress Testing}
 \subsubsection{Overview}
 
 Deployment of any machine learning authentication model requires strict thresholds for accuracy and overall performance. In the case of sensitive data protection and validation like banknote authentication, data scientists wish to minimize not only misclassifications, but false positives. A false positive results in a significant amount of financial loss, and potential damage to an institutions brand or public image if security loopholes are made public.
+
+\subsection{Experimental Procedure}
+
+We ran multiple iterations of our models (K-Nearest Neighbors, Gaussian Mixture Model, Support Vector Machine, Neural Network) across multiple 
+
+\subsection{Experimental Results}
+
+We found that elbow points in drops of accuracy existed for most classifiers as we increased the percentage of the data points allocated towards the test set.
+
+
+\begin{figure}
+\centering
+\begin{subfigure}{.5\textwidth} 
+\includegraphics[width=60mm]{NN.png}
+  \caption{Neural Network}
+  \end{subfigure}%
+\begin{subfigure}{.5\textwidth} 
+\includegraphics[width=60mm]{gaussian.png}
+  \caption{Gaussian Mixture Model}
+    \end{subfigure}%
+    
+    \begin{subfigure}{.5\textwidth} 
+\includegraphics[width=60mm]{KNN.png}
+  \caption{K Nearest Neighbors}
+      \end{subfigure}%
+          \begin{subfigure}{.5\textwidth} 
+\includegraphics[width=60mm]{linear.png}
+  \caption{Support Vector Linear Classifier}
+        \end{subfigure}%
+\end{figure}
 
 \subsection{Implementation of Frog Boiling Attack (FBA)}
 \subsubsection{Overview}
@@ -189,7 +223,7 @@ With the above-mentioned approach, we were able to successfully "attack" the sys
   \begin{figure}
   \centering
 \includegraphics[width=80mm]{acf.png}
-  \caption{An example of a typical autocorrelation function plot used to detect stationarity across}
+  \caption{An example of a typical autocorrelation function plot used to detect stationarity across time series data.}
 \end{figure}
 
 A crude, baseline implementation can be adopted to identify users perpetuating fraudulent banknotes:
@@ -246,9 +280,6 @@ Thus, a \lstinline!BATCH_SIZE! of 17 is selected for production deployment to mi
 
  \end{itemize}
 
-\subsubsection{FBA Optimizations}
-
-
 
 \section{Future Work}
 There is a healthy amount of research going into detecting counterfeit currency with machine learning, much of which leverage some variation of printing noise (such as our research), but there is also UV reactivity feature detection, as well as electromagnetic conductivity on various regions of a bill. It would be interesting to see whether the inclusion of these features would further strengthen or degrade the results of a classifier.
@@ -257,6 +288,48 @@ Furthermore, as a lot of these features require use of some sophisticated or com
 \begin{appendices}
 \section{Python Source Code}
 \subsection{Sample Size Stress Testing}
+
+\begin{lstlisting}
+if __name__ == "__main__":
+    cl = BanknoteClassifier(dataset='data/dataset.csv')
+    plotthis = []
+    # for each classifier of our choosing
+    for cname in ['knn', 'linear', 'random_forest', 'neural_network', 'gaussian']:
+        # interate 100 times, classifying, and corrupting the dataset using previous classification results
+        split = []
+        train_accuracy = []
+        test_accuracy = []
+        print("Classifier: {}".format(cname.upper()))
+        i=0
+        for trainset in range(20, 100, 3):
+            i += 1
+            cl.adjust_train_test_split(trainset*0.01)
+            result = cl.Classify(classifier=cname)
+            # ---- iterative debugging ----
+            # print("--- Iteration {} ---".format(i))
+            # print_data('Training', result['training'])
+            # print_data('Test', result['test'])
+            # ---- json printout ----
+            run = {
+                'classifier': cname,
+                'train/test split': '{}%'.format(trainset),
+                'train set': result['training']['total_count'],
+                'train accuracy' : result['training']['accuracy']*100,
+                'test set' : result['test']['total_count'],
+                'test accuracy' : result['test']['accuracy']*100
+            }
+
+            # ---- X/Y plotting ----
+            split.append(trainset)
+            train_accuracy.append(run['train accuracy'])
+            test_accuracy.append(run['test accuracy'])
+            print(json.dumps(run, indent=3))
+
+        plot.plot(split, train_accuracy, 'ro', split, test_accuracy, 'g^')
+        plot.xlabel('Split ratio')
+        plot.ylabel('Accuracy')
+        plot.show()
+\end{lstlisting}
 
 \subsection{Implementation of Frog Boiling Attack}
 \begin{lstlisting}
