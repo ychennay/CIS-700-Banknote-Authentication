@@ -126,6 +126,7 @@ number_correct_test = np.sum(test_predictions == y_test)
 \subsection{Sample Size Stress Testing}
 \subsubsection{Overview}
 
+Deployment of any machine learning authentication model requires strict thresholds for accuracy and overall performance. In the case of sensitive data protection and validation like banknote authentication, data scientists wish to minimize not only misclassifications, but false positives. A false positive results in a significant amount of financial loss, and potential damage to an institutions brand or public image if security loopholes are made public.
 
 \subsection{Implementation of Frog Boiling Attack (FBA)}
 \subsubsection{Overview}
@@ -182,6 +183,22 @@ With the above-mentioned approach, we were able to successfully "attack" the sys
 \begin{itemize}
   \item \textbf{Freezing Online Learning}: When discussing potential countermeasures to FBA, a tradeoff between responsiveness and security must be established. An obvious, yet sometimes unrealistic, method of prevention is to fully disable online learning completely, and "freeze" the authentication classifier. In many businesses cases, disabling online learning may result in a significant decline in model performance, especially if the feature space is exceptionally dynamic (ie. consumer entertainment and purchasing behavior, which is often a function of seasonality and inherent "drift").
   \item \textbf{Autocorrelation Detection}: An "honest" user (one who is utilizing the business' services as intended) should display no correlation between her submitted banknote data points. No correlation between a user's data points over time equates to each banknote being submitted independently of the prior banknotes (which should be the case if no fraudulent activity is happening).
+  \newline\newline
+  Autocorrelation functions are commonly used within time-series analysis to identify specific ranges of time periods that are indicative of future trends or behavior. ACF is also used as a metric for approximating the convergence of a Markov Process, specifically a Markov Chain Monte Carlo's stationary distribution\cite{mcmc}.
+  
+  \begin{figure}
+  \centering
+\includegraphics[width=80mm]{acf.png}
+  \caption{An example of a typical autocorrelation function plot used to detect stationarity across}
+\end{figure}
+
+A crude, baseline implementation can be adopted to identify users perpetuating fraudulent banknotes:
+\begin{itemize}
+\item For each user, plot autocorrelation function across a reasonable time interval. There should be no autocorrelation, or the autocorrelation should decay rapidly.
+\item For users flagged as having abnormal autocorrelations, identify how closely correlated the direction of movement is with the distance vector (a vector of differences between the negative centroid and the closest authenticated points).
+\item If the traversal vector and the user's drifted banknote data points are highly correlated, this person is a prime candidate for submitting forged banknotes and further investigation is required.
+\end{itemize}
+  
   \item \textbf{Batch Model Updates}: The crux of the Frog Boiling Attack is the assumption that the model will not be able to detect small "drift" towards a target template, capitalizing upon the inherent responsiveness of the model towards new data points. However, batching model updates increases the magnitude of "drift", with the hope being that the model is able to successfully detect larger "steps" if we perform model updates in batches. The pseudocode implementation for batching would be as follows:
 \begin{lstlisting}
 for user in users:
@@ -230,6 +247,9 @@ Thus, a \lstinline!BATCH_SIZE! of 17 is selected for production deployment to mi
  \end{itemize}
 
 \subsubsection{FBA Optimizations}
+
+
+
 \section{Future Work}
 There is a healthy amount of research going into detecting counterfeit currency with machine learning, much of which leverage some variation of printing noise (such as our research), but there is also UV reactivity feature detection, as well as electromagnetic conductivity on various regions of a bill. It would be interesting to see whether the inclusion of these features would further strengthen or degrade the results of a classifier.
 
@@ -337,6 +357,7 @@ Van Renesse, R.L.: Optical Document Security, 3rd edn., Artehouse Boston/London
 \bibitem{template_drift} Z. Wang, A. Serwadda, K.Balagani, and Vir V. Phoha, "Transforming animals in a Cyber-Behavioral Biometric Menagerie with Frog-Boiling Attacks" in \textit{The IEEE Fifth International Conference on Biometrics: Theory, Application and Systems (BTAS 2012)}, Washington DC, 2012
 \bibitem{intro_cite}
 Ian Simpson, "U.S. Fed ships new \$100 bills with anti-counterfeit features", October 8th, 2013. https://www.reuters.com/article/us-usa-currency-idUSBRE9970IZ20131008.
+\bibitem{mcmc} Eric B. Ford, "Convergence Diagnostics for Markov Chain Monte Carlo", Bayesian Computing for Astronomical Data Analysis. June 5th, 2015. http://astrostatistics.psu.edu/RLectures/diagnosticsMCMC.pdf
 
 \end{thebibliography}
 
