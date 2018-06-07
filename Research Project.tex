@@ -7,6 +7,7 @@
 \usepackage{amsmath}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage[title]{appendix}
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
 \definecolor{mauve}{rgb}{0.58,0,0.82}
@@ -40,21 +41,53 @@
 \maketitle
 
 \begin{abstract}
-Banknote authentication is a high-value task within the financial services industry. In this paper, we perform a validation study and probe into potential vulnerabilities of online machine learning models utilized for this task. In particular, we utilize the work of "Banknote Authentication" by Gillich and Lohweg\cite{original_paper}. The authors utilized an industry-standard technique of filtering the banknote grayscale image for viable regions of interest, and then performing a novel Shift Invariant Wavelet Transform for the model's feature engineering. We first validate Gillich and Lohweg's findings of 100\% accuracy on holdout datasets using a multitude of models (k-Nearest Neighbors, Support Vector Machine, etc.), and then identify critical thresholds where sample size begins to negative impact the potential performance of a machine learning model once deployed into production.
+Detecting counterfeit currency has been an issue since the dawn of currency. While human analysts have historically been able to leverage the unique features of genuine banknotes to identify counterfeit, the prevalence of increasingly sophisticated scanning and printing technology has made the distinction far less discernable for the human analyst. This challenge was tackled previously by two researchers ? Dr. Volker Lohweg and Eugen Gillich ? who utilized a novel Shift-Invariant Wavelet Transform to obtain feature vectors representing the printed  detail on both authentic and counterfeit banknotes. As they were able to achieve 100\% classification accuracy using a Support Vector Machine with a second-order polynomial kernel\cite{original_paper}. The authors utilized an industry-standard technique of filtering the banknote grayscale image for viable regions of interest, and then performing a novel Shift Invariant Wavelet Transform for the model's feature engineering. We first validate Gillich and Lohweg's findings of 100\% accuracy on holdout datasets using a multitude of models (k-Nearest Neighbors, Support Vector Machine, etc.), and then identify critical thresholds where sample size begins to negative impact the potential performance of a machine learning model once deployed into production.
 \newline\newline
-We conclude by investigating potential vulnerabilities an online machine learning system can encounter, specifically the Frog Boiling Attack. We outline a potential implementation of this type of penetration attack. In our experiments, depending on the classifier that was chosen, we were able to get the system to successfully mis-predict a forged data point as authentic in as few as 50 iterations. The complexity of the classifier didnâ€™t offer better protection against the attack. We saw that the simple k-Nearest-Neighbor performed better than the Support Vector Machine \& Gaussian models.
+We conclude by investigating potential vulnerabilities an online machine learning system can encounter, specifically the Frog Boiling Attack. We outline a potential implementation of this type of penetration attack. In our experiments, depending on the classifier that was chosen, we were able to get the system to successfully mis-predict a forged data point as authentic in as few as 50 iterations. The complexity of the classifier did no€™t offer better protection against the attack. We saw that the simple k-Nearest-Neighbor performed better than the Support Vector Machine \& Gaussian models.
 
 We also highlight various potential countermeasures to mitigate its negative impact on a machine learning system in production.
 \end{abstract}
 
 \section{Introduction}
-The Intaglio technique used within banknote printing allows for an unmatched sharpness in contrast through a feelable relief\cite{intaglio}. This technique forms a vital component of modern-day banknote authenticity verification. In the initial phase of authentication, \textbf{image digitization} occurs where the banknote's relief is captured through industry-grade cameras to produce an image grayscale that can be then undergo a feature transformation, such as the Wavelet Transform (WT). Prior to feature transformation, various \textbf{Regions of Interest (ROI)}. Regions with low mean and variance in grayscale values of the various blocks are selected:
+According to US Federal Reserve, the \$20 is the most frequently counterfeited bill domestically. On the other hand, the \$100 note is the most frequently counterfeited bill internationally, with half to two-thirds of the \$900 billion value in circulation outside of the US. [2] Recent technology has advanced to the point where the printing of high-fidelity counterfeit cash can be successfully achieved by a novice with a commonplace inkjet printer. Once counterfeit cash has been discovered in circulation, businesses and the general public bear the brunt of the resulting monetary loss, as the counterfeits are usually surrendered to law enforcement with no hope for reimbursement. Additionally, loss of currency credibility negatively impacts national creditworthiness, making accurate banknote validation a vital part of maintaining financial security.
+
+Many anti-fraud features have been added to currency, some of which include the 3-D security ribbon, color-shifting numbers, watermarking, and a UV-sensitive security thread. Interestingly enough, however, Dr. Lohweg and Mr. Gillich discovered that analyzing key features from a banknote?s Intaglio printing technique is still fruitful even as the difference in quality between genuine and counterfeit currency becomes indistinguishable to the human eye.
+
+The Intaglio technique used within banknote printing allows for an unmatched sharpness in contrast through a feelable relief\cite{intaglio}. This technique forms a vital component of modern-day banknote authenticity verification. In the initial phase of authentication, \textbf{image digitization} occurs where the banknote relief is captured through industry-grade cameras to produce an image grayscale that can be then undergo a feature transformation, such as the Wavelet Transform (WT). Prior to feature transformation, various \textbf{Regions of Interest (ROI)}. Regions with low mean and variance in grayscale values of the various blocks are selected:
 \begin{figure}
   \caption{A scatter plot from Gillich and Lohweg, 2010 showing the decision boundaries for selection of viable regions of interest. The circles are classified as appropriate ROIs while the squares are discarded for non-homogeneity or high mean grayscale values.}
   \centering
-\includegraphics[width=100mm]{roi_selection.png}
+\includegraphics[width=80mm]{roi_selection.png}
 \end{figure}
+
+We make use of their public data set to test out the performances of different classifiers, and take the resilient ones to task using the Frog Boiling Attack to measure their fragility. We also stress test the size of the data set to determine an optimal point between increasing the sampling size and the point of diminishing returns.
 \section{Related Work}
+As our work draws heavily on the previous research done by Dr. Lohweg and Gillich, it seems appropriate to explain their process in order to understand our data set. Their foundational premise is that the Intaglio printing technique, long used in the financial industry as a vital component to authenticity verification by providing unmatched sharpness in contrast and distinctive tactile qualities, could still be leveraged by machine learning to classify authentic banknotes from their counterfeit. Their work comprised of four parts ? digitizing Regions of Interest (ROI) on a banknote, identifying the viable ROI from the unusable, dividing the regions into discrete sub-regions in grayscale, and using the median value and the standard deviations from the mean grayscale values as classifiable features. The ROI consisted of areas on the banknote where the printed image was detailed enough so as to capture a fairly uniform grayscale region with small standard deviation and low median value.
+
+\begin{figure}
+  \centering
+\includegraphics[width=80mm]{roi_distinguish.png}
+  \caption{Distinguishing usefulness of ROI (left side) from their resulting mean values (right side): (a) is inhomogeneous and contains a more varied printing structure; (b) has a fairly uniform mean grayscale value and is ideal for authentication.}
+\end{figure}
+
+When charted, the viable and unusable regions were unambiguous. (See Fig. 1)
+The researchers then applied their novel two-dimensional wavelet transform (the Shift Invariant Wavelet Transform) to capture the scaling and structure of these ROIs and analyze the resulting statistical features from the standardized histograms of the wavelet coefficients 
+\begin{figure}
+  \centering
+\includegraphics[width=80mm]{histogram.png}
+  \caption{Histogram of wavelet coefficients after SWT: (a) from Genuine banknote; 
+(b) from High-Quality forgery; and (c) from Low-Quality forgery.}
+\end{figure}
+
+Additionally, using the Support Vector Machine polynomial kernel model to find clusters provided very clear classification between forged and genuine banknotes, with two discarded outliers that were ignored due to ambiguity of their appropriate classification.
+
+\begin{figure}
+  \centering
+\includegraphics[width=80mm]{feature_space.png}
+  \caption{Feature space using variance (feature 1), skewness (feature 2), and kurtosis (feature 3)}
+\end{figure}
+
+The resulting 1371 data points? extracted features became the starting point of our research. 
 
 \section{Experiments}
 
@@ -91,9 +124,10 @@ number_correct_test = np.sum(test_predictions == y_test)
 \end{lstlisting}
 
 \subsection{Sample Size Stress Testing}
+\subsubsection{Overview}
+
 
 \subsection{Implementation of Frog Boiling Attack (FBA)}
-
 \subsubsection{Overview}
 
 The Frog Boiling Attack is most effective during business contexts where online learning occurs (when data arrives as a stream and becomes ingested sequentially, with the fitted model updated after each new data point). The attack relies upon the concept of template drift\cite{template_drift}, where the model's fitted "template" of an authentic banknote data sample is corrupted over time by a stream of compromised data points. The overall implementation, implemented over $N$ steps, relies upon the update equation
@@ -196,21 +230,114 @@ Thus, a \lstinline!BATCH_SIZE! of 17 is selected for production deployment to mi
  \end{itemize}
 
 \subsubsection{FBA Optimizations}
-
-\begin{itemize}
-\item \textbf{Markov Chain Monte Carlo / Metropolis-Hastings Algorithm}:
-\end{itemize}
-
 \section{Future Work}
+There is a healthy amount of research going into detecting counterfeit currency with machine learning, much of which leverage some variation of printing noise (such as our research), but there is also UV reactivity feature detection, as well as electromagnetic conductivity on various regions of a bill. It would be interesting to see whether the inclusion of these features would further strengthen or degrade the results of a classifier.
+
+Furthermore, as a lot of these features require use of some sophisticated or commercial-grade equipment to extract the needed level of detail, more research could be done into the feature extraction and resulting accuracy rates of methods more available to the general populace ? such as feature extraction from using a camera from a mobile device. After all, small businesses and individuals also have a vested interest in ensuring the authenticity of the currency passing through their hands.
+\begin{appendices}
+\section{Python Source Code}
+\subsection{Sample Size Stress Testing}
+
+\subsection{Implementation of Frog Boiling Attack}
+\begin{lstlisting}
+
+    def CorruptData(self):
+    
+        """
+        Finds the closest authenticated datapoint (CAD), negative centroid, and the traversal distance vector
+        """
+
+        negative_means = self.GetMean('training', 0)
+        positive_means = self.GetMean('training', 1)
+
+        training_df = pandas.DataFrame(self.training_features)
+        training_positives_df = training_df[self.training_class == 1]
+
+        current_distance = 9999
+        closest_positive = None
+        for i in range(training_positives_df.shape[0]):
+            data_point = training_positives_df.values[i,:]
+            distance = numpy.linalg.norm(data_point - negative_means)
+            if distance < current_distance:
+                closest_positive = data_point
+                current_distance = distance
+
+        print(f"Closest positive data point is {closest_positive}")
+
+        distance = closest_positive - negative_means
+        return closest_positive, distance, negative_means
+        
+    def GetMean(self, dataset, classification):
+
+        """
+        :param dataset: string option of either test or training
+        :param classification: integer 0 or 1 to denote negative or positive
+        """
+        mean = []
+        for i in range(0, 3):
+            mean.append(0)
+        if dataset == 'test':
+            class_source = self.test_class
+            feature_source = self.test_features
+
+        elif dataset == 'training':
+            class_source = self.training_class
+            feature_source = self.training_features
+        targets = class_source == classification
+        df = pandas.DataFrame(feature_source)
+        filtered_features = df[targets].values
+        means = numpy.mean(filtered_features, axis=0)
+        print(f"The means for class {classification} are {means}")
+        return means
+
+if __name__ == "__main__":
+    predictor = BanknoteClassifier(dataset='data/dataset.csv')
+    # for each classifier of our choosing
+    for cname in ['knn']:  # ['linear', 'random_forest', 'neural_network', 'gaussian', 'knn']:
+        # interate 100 times, classifying, and corrupting the dataset using previous classification results
+
+        result = predictor.Classify(classifier=cname)
+        closest_positive, distance, negative_mean = predictor.CorruptData()
+        STEPS = 50
+        for idx in range(0, STEPS):
+
+            step = -distance / STEPS
+            print("before closest positive point:", closest_positive)
+            closest_positive += step
+            print("after, closest positive point:", closest_positive)
+            print("negative mean:", negative_mean)
+            print("distance from negative centroid: ", numpy.linalg.norm(closest_positive - negative_mean))
+
+            preds = predictor.classifier.predict(closest_positive.reshape(1,-1))
+            print(f"Prediction", preds)
+            if preds[0] == 1: # only if we receive a positive classification
+                print(predictor.training_features.shape)
+                new_feature_space = np.vstack((predictor.training_features, closest_positive))
+                new_class = np.append(predictor.training_class, 1)
+                print("New class shape:", new_class.shape)
+                print("New feature space", new_feature_space.shape)
+                predictor.training_features = new_feature_space
+                predictor.training_class = new_class
+                #predictor.classifier.fit(new_feature_space, new_class)
+                input()
+            else: # attacker is caught!
+                print(f"Classified as negative during iteration {idx}")
+                break
+ \end{lstlisting}
+        
+\end{appendices}
+
 
 \begin{thebibliography}{9}
 \bibitem{original_paper}
-Eugen Gillich and Volker Lohweg. \textit{Banknote Authentication}. inIT - Institute Industrial IT, Department of Electrical Engineering and Computer Science, Ostwestfalen-Lippe University of Applied Sciences
-November 2010
+Eugen Gillich and Volker Lohweg. \textit{Banknote Authentication}. inIT - Institute Industrial IT, Department of Electrical Engineering and Computer Science, Ostwestfalen-Lippe University of Applied Sciences, November 2010
 \bibitem{intaglio}
 Van Renesse, R.L.: Optical Document Security, 3rd edn., Artehouse Boston/London
 (2005)
 \bibitem{template_drift} Z. Wang, A. Serwadda, K.Balagani, and Vir V. Phoha, "Transforming animals in a Cyber-Behavioral Biometric Menagerie with Frog-Boiling Attacks" in \textit{The IEEE Fifth International Conference on Biometrics: Theory, Application and Systems (BTAS 2012)}, Washington DC, 2012
+\bibitem{intro_cite}
+Ian Simpson, "U.S. Fed ships new \$100 bills with anti-counterfeit features", October 8th, 2013. https://www.reuters.com/article/us-usa-currency-idUSBRE9970IZ20131008.
+
 \end{thebibliography}
 
 
