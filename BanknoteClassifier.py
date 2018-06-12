@@ -10,7 +10,6 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.neighbors import KNeighborsClassifier
 
 
-
 class BanknoteClassifier:
 
     def __init__(self, dataset):
